@@ -3,7 +3,8 @@ name: Build GigRide V3 APK
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -13,13 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Extract GigRide V3 project
-        run: |
-          unzip -o GigRide_V3_PHONE_BUILD_READY.zip -d gigride_build
-          cp -r gigride_build/. .
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -31,17 +27,140 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses || true
 
       - name: Install Android SDK packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        shell: bash
+        run: |
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
-      - name: Build debug APK
-        run: chmod +x gradlew && ./gradlew :app:assembleDebug --stacktrace
+      - name: Extract Android project files
+        shell: bash
+        run: |
+          echo "Repository contents:"
+          find . -maxdepth 3 -type f | sort | head -300
 
-      - name: Upload APK
+          echo ""
+          echo "Looking for ZIP Android projects..."
+
+          find . -type f \( -iname "*.zip" \) -print0 | while IFS= read -r -d '' zipfile; do
+            echo "Extracting: $zipfile"
+            mkdir -p extracted
+            unzip -o "$zipfile" -d extracted
+          done
+
+      - name: Find Android Gradle project
+        shell: bash
+        run: |
+          echo "Searching for settings.gradle / settings.gradle.kts..."
+
+          PROJECT_DIR=""
+
+          SETTINGS_FILE=$(find . \
+            -type f \
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            -not -path "./.git/*" \
+            | head -1)
+
+          if [ -n "$SETTINGS_FILE" ]; then
+            PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+          fi
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: No Android Gradle project found."
+            echo ""
+            echo "Files available:"
+            find . -maxdepth 6 -type f | sort
+            exit 1
+          fi
+
+          PROJECT_DIR=$(realpath "$PROJECT_DIR")
+
+          echo "Android project found at:"
+          echo "$PROJECT_DIR"
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Show Android project structure
+        shell: bash
+        run: |
+          echo "Project directory:"
+          echo "$PROJECT_DIR"
+
+          echo ""
+          echo "Project files:"
+          find "$PROJECT_DIR" -maxdepth 3 -type f | sort
+
+      - name: Install Gradle 8.7
+        shell: bash
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip -d "$HOME"
+          echo "$HOME/gradle-8.7/bin" >> "$GITHUB_PATH"
+
+          gradle --version
+
+      - name: Build GigRide V3 debug APK
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+
+          echo "Building from:"
+          pwd
+
+          echo ""
+          echo "Gradle files:"
+          ls -la
+
+          if [ -f "./gradlew" ]; then
+            echo "Gradle wrapper found."
+            chmod +x ./gradlew
+            ./gradlew :app:assembleDebug --stacktrace --no-daemon
+          else
+            echo "No Gradle wrapper found."
+            echo "Using Gradle 8.7."
+            gradle :app:assembleDebug --stacktrace --no-daemon
+          fi
+
+      - name: Locate APK
+        shell: bash
+        run: |
+          echo "Searching for APK..."
+
+          find "$PROJECT_DIR" \
+            -type f \
+            -name "*.apk" \
+            -print
+
+          APK=$(find "$PROJECT_DIR" \
+            -type f \
+            -path "*/app/build/outputs/apk/debug/*.apk" \
+            | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK was not created."
+            echo ""
+            echo "All build output:"
+            find "$PROJECT_DIR" -type f \
+              \( -name "*.apk" -o -name "*.aab" \) \
+              -print
+            exit 1
+          fi
+
+          echo "APK found:"
+          echo "$APK"
+
+          mkdir -p "$GITHUB_WORKSPACE/apk-output"
+          cp "$APK" "$GITHUB_WORKSPACE/apk-output/GigRide-V3-debug.apk"
+
+      - name: Upload GigRide V3 APK
         uses: actions/upload-artifact@v4
         with:
           name: GigRide-V3-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: apk-output/GigRide-V3-debug.apk
           if-no-files-found: error
