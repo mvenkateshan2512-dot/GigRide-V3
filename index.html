@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="GigRide Pro">
+  <title>GigRide Pro - Chennai Edition</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card-bg: #0f172a;
+      --card-border: #1e293b;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --purple: #a855f7;
+      --orange: #f97316;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 150px; }
+
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .toggle-btn {
+      padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;
+      border: 1px solid #334155; cursor: pointer; transition: 0.2s; background: #1e293b; color: var(--text-muted);
+    }
+    .btn-offline { background: #1e293b; color: var(--text-muted); }
+    .btn-online { background: rgba(34, 197, 94, 0.2); color: var(--green); border-color: var(--green); }
+
+    .perm-bar {
+      background: #111a2e; border: 1px solid var(--card-border);
+      border-radius: 8px; padding: 6px 10px; font-size: 0.72rem; color: var(--text-muted);
+      display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .status-pill { font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+    .status-active { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+    .status-standby { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+    .stat-tile { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; text-align: center; border: 1px solid transparent; }
+    .stat-tile.editable { cursor: pointer; border: 1px dashed #334155; }
+    .stat-tile.editable:active { border-color: var(--accent); }
+    .stat-label { font-size: 0.68rem; color: var(--text-muted); }
+    .stat-val { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+
+    .income-val { color: var(--green); }
+    .expense-val { color: var(--red); }
+    .profit-val { color: var(--accent); }
+    .fuel-val { color: var(--orange); }
+
+    /* PURE CSS/SVG SPEEDOMETER - ZERO FREEZE */
+    .speedo-box {
+      width: 150px; height: 150px; margin: 0 auto; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .speedo-dial {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: conic-gradient(from 225deg, var(--green) 0deg, var(--yellow) 140deg, var(--red) 240deg, transparent 240deg);
+      -webkit-mask: radial-gradient(transparent 58px, #000 59px);
+      mask: radial-gradient(transparent 58px, #000 59px);
+    }
+    .speedo-core {
+      position: absolute; text-align: center;
+    }
+    .speed-number { font-size: 2rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .speed-unit { font-size: 0.65rem; color: var(--text-muted); }
+
+    /* PROGRESS BAR */
+    .progress-track { background: #1e293b; height: 10px; border-radius: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.4s ease; border-radius: 6px; }
+    .drive-tip {
+      margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 8px;
+      font-size: 0.72rem; color: #bbf7d0; text-align: center; min-height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.3s ease; opacity: 1;
+    }
+
+    /* FUEL FORM */
+    .fuel-box { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .fuel-input {
+      background: #070b14; border: 1px solid #334155; color: #fff;
+      padding: 8px; border-radius: 6px; font-size: 0.8rem; flex: 1; min-width: 80px;
+    }
+    .btn-fuel {
+      background: var(--orange); color: #fff; border: none; border-radius: 6px;
+      padding: 8px 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;
+    }
+
+    /* TRANSACTION TABLE */
+    .tx-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    .tx-table th { padding: 6px 4px; color: var(--text-muted); border-bottom: 1px solid #334155; text-align: left; }
+    .tx-table td { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .badge { font-size: 0.6rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; text-transform: uppercase; }
+    .badge-income { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+    .badge-fuel { background: rgba(249, 115, 22, 0.2); color: var(--orange); }
+    .badge-expense { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+
+    /* FIXED BOTTOM COMMAND INPUT */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(15, 23, 42, 0.98); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      padding: 10px; border-top: 1px solid #334155;
+      display: flex; flex-direction: column; gap: 6px; z-index: 100;
+    }
+    .input-row { display: flex; gap: 6px; }
+    .text-input {
+      flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #334155;
+      background: #0b0f19; color: #fff; font-size: 0.85rem;
+    }
+    .btn-action {
+      background: var(--accent); color: #000; border: none; border-radius: 6px;
+      padding: 10px 14px; font-weight: 700; cursor: pointer; font-size: 0.8rem;
+    }
+    .btn-action:disabled { opacity: 0.55; cursor: not-allowed; }
+    .copilot-alert {
+      border: 1px solid var(--yellow);
+      background: rgba(245,158,11,.10);
+    }
+    .voice-listening {
+      background: var(--purple) !important;
+      color: #fff !important;
+      animation: voicePulse 1.2s infinite;
+    }
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,.45); }
+      50% { box-shadow: 0 0 0 8px rgba(168,85,247,0); }
+    }
+
+    /* IN-LINE MODAL (NO BLOCKING PROMPTS) */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75); display: none; justify-content: center; align-items: center; z-index: 200;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--card-bg); border: 1px solid var(--accent);
+      padding: 16px; border-radius: 12px; width: 90%; max-width: 300px;
+    }
+    .modal-box input {
+      width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155;
+      background: #070b14; color: #fff; font-size: 1rem; margin: 10px 0; outline: none;
+    }
+    .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+    .modal-btn-cancel { background: #1e293b; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .modal-btn-save { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  </style>
+
+<style id="edge-mobile-enhancements">
+html { -webkit-text-size-adjust: 100%; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+button, input, select, textarea { touch-action: manipulation; }
+@media (max-width: 600px) {
+  button, .btn { min-height: 42px; }
+  input, select, textarea { font-size: 16px !important; }
+  table { max-width: 100%; overflow-x: auto; }
+}
+</style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body>
+
+<div id="httpsDiag" style="position:sticky;top:0;z-index:99990;background:#0b1220;color:#e5e7eb;padding:7px 10px;font:600 11px system-ui;border-bottom:1px solid #263244;">
+  <span id="httpsDiagText">Checking secure connection…</span>
+  <button id="httpsGpsBtn" type="button" style="margin-left:8px;padding:5px 8px;border:0;border-radius:7px;font-weight:800;background:#22c55e;color:#052e16;">Test GPS</button>
+  <button id="httpsMicBtn" type="button" style="margin-left:5px;padding:5px 8px;border:0;border-radius:7px;font-weight:800;background:#38bdf8;color:#082f49;">Test Mic</button>
+</div>
+<script>
+(function(){
+  const t=document.getElementById('httpsDiagText');
+  const gps=document.getElementById('httpsGpsBtn');
+  const mic=document.getElementById('httpsMicBtn');
+
+  function base(){
+    if(window.isSecureContext){
+      t.textContent='🔒 HTTPS secure • GPS + microphone APIs available to request permission';
+      t.style.color='#86efac';
+    }else{
+      t.textContent='⚠️ Not HTTPS • open the GitHub Pages https:// address';
+      t.style.color='#fbbf24';
+    }
+  }
+  base();
+
+  gps.onclick=function(){
+    if(!window.isSecureContext){
+      alert('GPS requires the HTTPS version. Open the GitHub Pages https:// address first.');
+      return;
+    }
+    if(!navigator.geolocation){
+      alert('This Edge installation does not expose Geolocation.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      p=>alert('GPS OK\\nLatitude: '+p.coords.latitude.toFixed(6)+'\\nLongitude: '+p.coords.longitude.toFixed(6)+'\\nAccuracy: '+Math.round(p.coords.accuracy)+' m'),
+      e=>alert('GPS permission/error: '+e.message),
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+    );
+  };
+
+  mic.onclick=async function(){
+    if(!window.isSecureContext){
+      alert('Microphone requires the HTTPS version. Open the GitHub Pages https:// address first.');
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      alert('Microphone access is not available in this Edge context.');
+      return;
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      stream.getTracks().forEach(track=>track.stop());
+      alert('Microphone permission is working.');
+    }catch(e){
+      alert('Microphone permission/error: '+(e.message||e.name));
+    }
+  };
+})();
+</script>
+
+
+<div id="edgeStatusBar" style="position:sticky;top:0;z-index:99999;padding:5px 10px;background:#0f172a;color:#e2e8f0;font:700 11px system-ui;text-align:right;">
+  <span id="edgeNetStatus">● Checking connection…</span>
+</div>
+<script>
+(function(){
+  const e=document.getElementById('edgeNetStatus');
+  function f(){ if(e){ e.textContent=navigator.onLine?'● Edge • Online':'● Edge • Offline'; e.style.color=navigator.onLine?'#86efac':'#fbbf24'; } }
+  addEventListener('online',f); addEventListener('offline',f); f();
+})();
+</script>
+
+
+  <div class="header">
+    <div>
+      <h1 style="font-size: 1.15rem; font-weight: 800;">GigRide Pro <span style="font-size: 0.65rem; color: var(--accent);">Chennai</span></h1>
+      <div style="display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;">
+        <span id="currentDate" style="font-size: 0.68rem; color: var(--text-muted);"></span>
+        <span id="currentTime" style="font-size: 0.72rem; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums;"></span>
+      </div>
+    </div>
+    <button id="modeToggleBtn" class="toggle-btn btn-offline" onclick="toggleShift()">
+      🔴 OFFLINE
+    </button>
+  </div>
+
+  <div class="perm-bar">
+    <span>🛰️ GPS: <span id="gpsPill" class="status-pill status-standby">IDLE</span></span>
+    <span>⛽ Petrol (CHN): <span style="color:var(--text); font-weight:600;">₹100.75/L</span></span>
+    <span>🎯 Trips: <span id="tripPill" class="status-pill status-standby">0</span></span>
+    <span>🎙️ Voice: <span id="voicePill" class="status-pill status-standby">OFF</span></span>
+  </div>
+
+  <div class="card" style="border-color:var(--purple);">
+    <h2>
+      <span style="color:var(--purple);">🎙️ Voice Trip Control</span>
+      <span id="voiceBrowser" style="font-size:0.65rem;color:var(--text-muted);">Checking Edge…</span>
+    </h2>
+    <div class="grid-2">
+      <button id="voiceBtn" class="btn-action" type="button" onclick="toggleVoiceListening()">🎙️ Start Voice</button>
+      <button class="btn-action" type="button" style="background:#1e293b;color:#fff;" onclick="showVoiceHelp()">Voice Commands</button>
+    </div>
+    <div id="voiceStatus" style="font-size:0.72rem;color:var(--text-muted);text-align:center;margin-top:7px;">
+      Say “start trip” or “stop trip”. You can also say “start shift” / “stop shift”.<br>🎙️ Microphone and 🛰️ GPS require Edge permission. HTTPS is recommended for reliable phone access.
+    </div>
+  </div>
+
+  <!-- SHIFT GOAL & TRIP COUNTER -->
+  <div class="card" style="border-color: var(--green);">
+    <h2>
+      <span style="color: var(--green);">🎯 Shift Goal & Trips</span>
+      <span style="font-size:0.65rem; color:var(--accent); cursor:pointer;" onclick="openModal('target')">Set Target ✏️</span>
+    </h2>
+    <div class="grid-3" style="margin-bottom: 8px;">
+      <div class="stat-tile">
+        <div class="stat-label">Trips Logged</div>
+        <div id="tripCount" class="stat-val profit-val">0</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Avg / Trip</div>
+        <div id="avgTrip" class="stat-val income-val">₹0</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Daily Target</div>
+        <div id="targetVal" class="stat-val" style="color: var(--yellow);">Not set</div>
+      </div>
+    </div>
+    <div class="progress-track"><div id="targetProgress" class="progress-fill" style="width:0%;"></div></div>
+    <div id="targetLabel" style="font-size:0.68rem; color:var(--text-muted); text-align:center; margin-top:6px;">Tap "Set Target" to track progress toward your shift goal</div>
+    <div id="driveTip" class="drive-tip">🚗 Loading driver tip…</div>
+  </div>
+
+
+  <!-- COPILOT MANAGER -->
+  <div class="card" style="border-color:var(--accent);">
+    <h2>
+      <span style="color:var(--accent);">🤖 GigRide Copilot Manager</span>
+      <span id="copilotState" class="status-pill status-standby">STANDBY</span>
+    </h2>
+
+    <div class="grid-2" style="margin-bottom:8px;">
+      <div class="stat-tile">
+        <div class="stat-label">Current Location</div>
+        <div id="copilotLocation" class="stat-val" style="font-size:.85rem;">Waiting for GPS</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Weather</div>
+        <div id="copilotWeather" class="stat-val" style="font-size:.85rem;">Not updated</div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:8px;">
+      <div class="stat-tile">
+        <div class="stat-label">Petrol Price</div>
+        <div id="copilotFuel" class="stat-val fuel-val">Auto-checking…</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">₹ / Hour</div>
+        <div id="copilotHourly" class="stat-val income-val">₹0</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">₹ / KM</div>
+        <div id="copilotRate" class="stat-val profit-val">₹0</div>
+      </div>
+    </div>
+
+    <div id="copilotAdvice" class="drive-tip" style="min-height:46px;">
+      🤖 Start a shift to let Copilot monitor your driving data.
+    </div>
+    <div class="card" style="margin-top:10px;border-color:#64748b;background:#0b1220;">
+      <h2>
+        <span style="color:#e2e8f0;">🛡️ Copilot Validation</span>
+        <span id="validationState" class="status-pill status-standby">WAITING</span>
+      </h2>
+      <div id="validationMessage" style="font-size:.72rem;color:var(--text-muted);line-height:1.45;">
+        Copilot will validate live information before using it in calculations.
+      </div>
+      <div id="managerActivity" style="font-size:.66rem;color:var(--accent);margin-top:5px;">
+        🤖 Automatic manager is ready.
+      </div>
+      <div id="fuelSourceDetail" style="font-size:.62rem;color:var(--text-muted);margin-top:4px;">
+        ⛽ Fuel source: automatic verification pending
+      </div>
+      <div id="validationRows" style="margin-top:8px;"></div>
+      <div class="grid-2" style="margin-top:8px;">
+        <button class="btn-action" type="button" onclick="validateLiveInputs(true)">🧠 Validate Now</button>
+        <button class="btn-action" type="button" style="background:#1e293b;color:#fff;" onclick="openInputReview()">✏️ Review Inputs</button>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:8px;">
+      <button class="btn-action" type="button" onclick="refreshCopilot(true)">🔄 Refresh Live Data</button>
+      <button class="btn-action" type="button" style="background:#1e293b;color:#fff;" onclick="speakCopilotAdvice()">🔊 Read Advice</button>
+    </div>
+    <div class="grid-2" style="margin-top:8px;">
+      <button id="autoPilotBtn" class="btn-action" type="button" onclick="toggleAutoPilot()">🤖 Auto Manager: OFF</button>
+      <button class="btn-action" type="button" style="background:#16a34a;color:#fff;" onclick="checkGpsPermissionAndStart()">🛰️ Enable GPS</button>
+      <button class="btn-action" type="button" style="background:#334155;color:#fff;" onclick="runManagerNow()">⚡ Manager Check Now</button>
+    </div>
+
+    <div style="font-size:.62rem;color:var(--text-muted);text-align:center;margin-top:7px;">
+      Weather uses a public forecast service when internet is available. Location is read from phone GPS.
+    </div>
+  </div>
+
+  <!-- ACTIVE TRIP STATUS -->
+  <div class="card" style="border-color:var(--purple);">
+    <h2>
+      <span style="color:var(--purple);">🚕 Trip Status</span>
+      <span id="tripState" class="status-pill status-standby">STOPPED</span>
+    </h2>
+    <div class="grid-3">
+      <div class="stat-tile">
+        <div class="stat-label">Trip Distance</div>
+        <div id="tripDistance" class="stat-val profit-val">0.00 km</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Trip Time</div>
+        <div id="tripTimer" class="stat-val">00:00:00</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Trip Control</div>
+        <button id="tripControlBtn" class="btn-action" type="button" onclick="toggleTrip()">▶ Start Trip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELEMETRY SPEEDOMETER -->
+  <div class="card">
+    <h2>Live Speed Telemetry</h2>
+    <div class="speedo-box">
+      <div class="speedo-dial"></div>
+      <div class="speedo-core">
+        <div id="speedVal" class="speed-number">0</div>
+        <div class="speed-unit">km/h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROTECTED ODOMETER (BASE 1.0 KM) -->
+  <div class="card" style="border-color: var(--accent);">
+    <h2>
+      <span style="color: var(--accent);">📍 Protected Odometer</span>
+      <span style="font-size:0.65rem; color:var(--yellow);">🔒 Read-Only Live Stream</span>
+    </h2>
+    <div class="grid-4">
+      <div class="stat-tile">
+        <div class="stat-label">Shift Distance 🔒</div>
+        <div id="shiftDist" class="stat-val profit-val">0.00 km</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Total Odometer 🔒</div>
+        <div id="liveOdo" class="stat-val">1.00 km</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHENNAI FUEL & MILEAGE LEDGER -->
+  <div class="card" style="border-color: var(--orange);">
+    <h2>
+      <span style="color: var(--orange);">⛽ Chennai Fuel & Economy</span>
+      <span style="font-size:0.65rem; color:var(--text-muted);">Petrol: ₹100.75 | Diesel: ₹92.34</span>
+    </h2>
+    <div class="grid-3" style="margin-bottom: 8px;">
+      <div class="stat-tile">
+        <div class="stat-label">Fuel Spent</div>
+        <div id="fuelSpent" class="stat-val fuel-val">₹0</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Fuel Volume</div>
+        <div id="fuelVolume" class="stat-val fuel-val">0.00 L</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Running Economy</div>
+        <div id="mileageDisplay" class="stat-val profit-val">0.0 km/L</div>
+      </div>
+    </div>
+    <div class="fuel-box">
+      <input type="number" id="fuelAmtInput" class="fuel-input" placeholder="Amount (₹) e.g. 500">
+      <select id="fuelType" class="fuel-input" style="max-width: 130px;">
+        <option value="100.75">Petrol (₹100.75)</option>
+        <option value="92.34">Diesel (₹92.34)</option>
+      </select>
+      <button class="btn-fuel" onclick="addFuel()">+ Refill</button>
+    </div>
+  </div>
+
+  <!-- FINANCIALS (EDITABLE VIA SAFE MODAL) -->
+  <div class="card">
+    <h2>
+      <span>Active Shift <span id="shiftTimer">00:00:00</span></span>
+      <span style="font-size:0.65rem; color:var(--accent);">Tap tile to add ✏️</span>
+    </h2>
+    <div class="grid-4">
+      <div class="stat-tile editable" onclick="openModal('income')">
+        <div class="stat-label">Gig Income ✏️</div>
+        <div id="incomeVal" class="stat-val income-val">₹0</div>
+      </div>
+      <div class="stat-tile editable" onclick="openModal('expense')">
+        <div class="stat-label">Other Expense ✏️</div>
+        <div id="expenseVal" class="stat-val expense-val">₹0</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Net Rate</div>
+        <div id="netRate" class="stat-val profit-val">₹0.00/km</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">Net Profit</div>
+        <div id="netProfit" class="stat-val profit-val">₹0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT TRANSACTION LEDGER -->
+  <div class="card">
+    <h2>
+      <span>Transaction Ledger</span>
+      <button onclick="clearLedger()" style="background:#1e293b; color:#94a3b8; border:1px solid #334155; padding:2px 6px; border-radius:4px; font-size:0.65rem; cursor:pointer;">Clear</button>
+    </h2>
+    <div style="max-height: 160px; overflow-y: auto;">
+      <table class="tx-table">
+        <thead>
+          <tr>
+            <th>Tx ID</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th style="text-align:right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="txBody">
+          <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">No entries logged yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMMAND INPUT BAR -->
+  <div class="bottom-bar">
+    <div id="statusNotice" style="font-size:0.7rem; color:var(--yellow); text-align:center;">Type "150 Ola", "Petrol 400", "Tea 20" & hit Enter:</div>
+    <div class="input-row">
+      <input type="text" id="cmdInput" class="text-input" placeholder='e.g. "150 Ola", "Petrol 500", "Toll 45"'>
+      <button class="btn-action" onclick="handleCommand()">Add</button>
+    </div>
+  </div>
+
+  <!-- SAFE NON-BLOCKING MODAL -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="modalTitle" style="font-size:0.9rem;">Add Income</h3>
+      <input type="number" id="modalInput" step="any" placeholder="Amount (₹)" inputmode="decimal">
+      <div class="modal-btns">
+        <button onclick="closeModal()" class="modal-btn-cancel">Cancel</button>
+        <button onclick="saveModal()" class="modal-btn-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    var CHENNAI_PETROL = 100.75;
+    var CHENNAI_DIESEL = 92.34;
+
+    var state = {
+      isOnline: false,
+      seconds: 0,
+      distance: 0.0,
+      baseOdo: 1.0,
+      income: 0,
+      expenses: 0,
+      fuelSpent: 0,
+      fuelVolume: 0,
+      txCount: 1001,
+      txs: [],
+      tripActive: false,
+      tripSeconds: 0,
+      tripDistance: 0,
+      shiftStartedAt: null,
+      copilot: {
+        lat: null,
+        lon: null,
+        locationText: 'Waiting for GPS',
+        weatherText: 'Not updated',
+        temperature: null,
+        rainProbability: null,
+        weatherUpdatedAt: null,
+        fuelUpdatedAt: null,
+        fuelPrice: null,
+        fuelSource: 'Fallback',
+        fuelConfidence: 'LOW',
+        fuelSources: [],
+        fuelSourceDetail: 'Automatic verification pending',
+        validatedAt: null,
+        validationNotes: [],
+        autoPilot: true,
+        lastManagerRun: null,
+        fuelPrice: null
+      }
+    };
+
+    var timer = null;
+    var tripTimer = null;
+    var watchId = null;
+    var lastCoords = null;
+    var tripLastCoords = null;
+    var modalField = null;
+
+    // Microsoft Edge-compatible Web Speech API detection.
+    var SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    var recognition = null;
+    var voiceListening = false;
+
+    // ================= LIVE CLOCK & DAY =================
+    var DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function updateClock() {
+      var now = new Date();
+      document.getElementById('currentDate').textContent =
+        DAY_NAMES[now.getDay()] + ', ' + MONTH_NAMES[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      var h = now.getHours();
+      var ampm = h >= 12 ? 'PM' : 'AM';
+      var h12 = h % 12; if (h12 === 0) h12 = 12;
+      var hh = String(h12).padStart(2, '0');
+      var mm = String(now.getMinutes()).padStart(2, '0');
+      var ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('currentTime').textContent = hh + ':' + mm + ':' + ss + ' ' + ampm;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ================= HAVERSINE FORMULA =================
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+      var R = 6371;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    // ================= SHIFT ENGINE =================
+    function toggleShift() {
+      state.isOnline = !state.isOnline;
+      var btn = document.getElementById('modeToggleBtn');
+
+      if (state.isOnline) {
+        state.shiftStartedAt = Date.now();
+        btn.className = 'toggle-btn btn-online';
+        btn.textContent = '🟢 ONLINE';
+        document.getElementById('gpsPill').className = 'status-pill status-active';
+        document.getElementById('gpsPill').textContent = 'ACTIVE';
+
+        timer = setInterval(function () {
+          state.seconds++;
+          var h = String(Math.floor(state.seconds / 3600)).padStart(2, '0');
+          var m = String(Math.floor((state.seconds % 3600) / 60)).padStart(2, '0');
+          var s = String(state.seconds % 60).padStart(2, '0');
+          document.getElementById('shiftTimer').textContent = h + ':' + m + ':' + s;
+          updateUI();
+        }, 1000);
+
+        if (navigator.geolocation) {
+          checkGpsPermissionAndStart();
+        } else {
+          document.getElementById('gpsPill').textContent = 'UNSUPPORTED';
+        }
+      } else {
+        state.shiftStartedAt = null;
+        btn.className = 'toggle-btn btn-offline';
+        btn.textContent = '🔴 OFFLINE';
+        clearInterval(timer);
+        if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        lastCoords = null;
+        document.getElementById('speedVal').textContent = '0';
+        document.getElementById('gpsPill').className = 'status-pill status-standby';
+        document.getElementById('gpsPill').textContent = 'IDLE';
+        if (state.tripActive) stopTrip(false);
+        updateUI();
+      }
+    }
+
+    // ================= TRIP ENGINE =================
+    function startTrip() {
+      if (state.tripActive) {
+        flashNotice('Trip is already running.');
+        return;
+      }
+
+      // A trip needs the shift/GPS engine running.
+      if (!state.isOnline) {
+        toggleShift();
+      }
+
+      state.tripActive = true;
+      state.tripSeconds = 0;
+      state.tripDistance = 0;
+      tripLastCoords = lastCoords ? {
+        latitude: lastCoords.latitude,
+        longitude: lastCoords.longitude
+      } : null;
+
+      clearInterval(tripTimer);
+      tripTimer = setInterval(function () {
+        if (!state.tripActive) return;
+        state.tripSeconds++;
+        updateTripUI();
+      }, 1000);
+
+      updateTripUI();
+      flashNotice('🚕 Trip started.');
+      speakText('Trip started');
+      if (state.copilot.autoPilot) runManagerNow();
+    }
+
+    function stopTrip(announce) {
+      if (!state.tripActive) {
+        flashNotice('No active trip.');
+        return;
+      }
+
+      state.tripActive = false;
+      clearInterval(tripTimer);
+      tripTimer = null;
+      updateTripUI();
+
+      if (announce !== false) {
+        flashNotice('🛑 Trip stopped — ' + state.tripDistance.toFixed(2) + ' km.');
+        speakText('Trip stopped');
+      }
+      if (state.copilot.autoPilot) runManagerNow();
+    }
+
+    function toggleTrip() {
+      if (state.tripActive) stopTrip(true);
+      else startTrip();
+    }
+
+    function updateTripUI() {
+      var stateEl = document.getElementById('tripState');
+      var btn = document.getElementById('tripControlBtn');
+      stateEl.textContent = state.tripActive ? 'RUNNING' : 'STOPPED';
+      stateEl.className = 'status-pill ' + (state.tripActive ? 'status-active' : 'status-standby');
+      btn.textContent = state.tripActive ? '■ Stop Trip' : '▶ Start Trip';
+      btn.style.background = state.tripActive ? 'var(--red)' : 'var(--accent)';
+      btn.style.color = state.tripActive ? '#fff' : '#000';
+
+      var h = String(Math.floor(state.tripSeconds / 3600)).padStart(2, '0');
+      var m = String(Math.floor((state.tripSeconds % 3600) / 60)).padStart(2, '0');
+      var s = String(state.tripSeconds % 60).padStart(2, '0');
+      document.getElementById('tripTimer').textContent = h + ':' + m + ':' + s;
+      document.getElementById('tripDistance').textContent = state.tripDistance.toFixed(2) + ' km';
+    }
+
+    // ================= EDGE VOICE CONTROL =================
+    function initVoice() {
+      var browserEl = document.getElementById('voiceBrowser');
+      var btn = document.getElementById('voiceBtn');
+
+      if (!SpeechRecognitionAPI) {
+        browserEl.textContent = 'Speech API unavailable';
+        btn.disabled = true;
+        setVoiceStatus('Voice commands are not available in this Edge/device configuration. Use the buttons instead.');
+        return;
+      }
+
+      browserEl.textContent = 'Edge-compatible';
+      recognition = new SpeechRecognitionAPI();
+      recognition.lang = 'en-IN';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.onstart = function () {
+        voiceListening = true;
+        document.getElementById('voicePill').textContent = 'LISTENING';
+        document.getElementById('voicePill').className = 'status-pill status-active';
+        document.getElementById('voiceBtn').textContent = '🛑 Stop Voice';
+        document.getElementById('voiceBtn').classList.add('voice-listening');
+        setVoiceStatus('Listening… say “start trip”, “stop trip”, “start shift”, or “stop shift”.');
+      };
+
+      recognition.onresult = function (event) {
+        var transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) transcript += event.results[i][0].transcript + ' ';
+        }
+        transcript = transcript.trim().toLowerCase();
+        if (transcript) processVoiceCommand(transcript);
+      };
+
+      recognition.onerror = function (event) {
+        setVoiceStatus('Voice error: ' + event.error + '. Check Edge microphone permission.');
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          voiceListening = false;
+        }
+      };
+
+      recognition.onend = function () {
+        if (voiceListening) {
+          setTimeout(function(){
+            try { recognition.start(); } catch (e) {}
+          }, 500);
+          return;
+        }
+        document.getElementById('voicePill').textContent = 'OFF';
+        document.getElementById('voicePill').className = 'status-pill status-standby';
+        document.getElementById('voiceBtn').textContent = '🎙️ Start Voice';
+        document.getElementById('voiceBtn').classList.remove('voice-listening');
+      };
+    }
+
+    function toggleVoiceListening() {
+      if (!recognition) {
+        initVoice();
+      }
+      if (!recognition) return;
+
+      if (voiceListening) {
+        try { recognition.stop(); } catch (e) {}
+        return;
+      }
+
+      requestMicrophonePermission().then(function(ok) {
+        if (!ok) {
+          setVoiceStatus('🎙️ Microphone permission is required. Use Edge site permissions and allow Microphone.');
+          return;
+        }
+        try {
+          recognition.start();
+        } catch (e) {
+          setVoiceStatus('Voice is already starting. Please wait a moment.');
+        }
+      });
+    }
+
+    async function requestMicrophonePermission() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setVoiceStatus('Microphone API unavailable. Open GigRide from a secure HTTPS Edge address.');
+          return false;
+        }
+        var stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        stream.getTracks().forEach(function(track){ track.stop(); });
+        return true;
+      } catch (e) {
+        var msg = e && e.name ? e.name : 'permission error';
+        setVoiceStatus('Microphone: ' + msg + '. Allow Microphone for this Edge site, then tap Start Voice again.');
+        return false;
+      }
+    }
+
+    function checkGpsPermissionAndStart() {
+      if (!navigator.geolocation) {
+        setGpsStatus('UNSUPPORTED');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        updateGpsFromPosition(pos);
+        startGpsWatch();
+      }, function(err) {
+        var msg = err && err.code === 1 ? 'PERMISSION DENIED' :
+                  err && err.code === 2 ? 'UNAVAILABLE' : 'TIMEOUT';
+        setGpsStatus(msg);
+      }, {enableHighAccuracy:true, timeout:12000, maximumAge:5000});
+    }
+
+    function setGpsStatus(text) {
+      var el = document.getElementById('gpsPill');
+      if (el) el.textContent = text;
+    }
+
+    function updateGpsFromPosition(pos) {
+      if (!pos || !pos.coords) return;
+      document.getElementById('speedVal').textContent =
+        (pos.coords.speed && pos.coords.speed > 0.8) ? Math.round(pos.coords.speed * 3.6) : '0';
+      if (typeof updateCopilotLocation === 'function') {
+        updateCopilotLocation(pos);
+        updateCopilotUI();
+      }
+      var pill = document.getElementById('gpsPill');
+      if (pill) {
+        pill.className = 'status-pill status-active';
+        pill.textContent = 'GPS OK';
+      }
+    }
+
+    function startGpsWatch() {
+      if (!navigator.geolocation) return;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = navigator.geolocation.watchPosition(function(pos) {
+        var previous = lastCoords;
+        updateGpsFromPosition(pos);
+        if (previous) {
+          var deltaKm = getDistanceKm(previous.latitude, previous.longitude,
+            pos.coords.latitude, pos.coords.longitude);
+          if (deltaKm > 0.012 && pos.coords.accuracy <= 50) {
+            state.distance += deltaKm;
+            if (state.tripActive) state.tripDistance += deltaKm;
+          }
+        }
+        lastCoords = pos.coords;
+        updateUI();
+      }, function(err) {
+        setGpsStatus(err && err.code === 1 ? 'PERMISSION DENIED' : 'NO SIGNAL');
+      }, {enableHighAccuracy:true, timeout:10000, maximumAge:2000});
+    }
+
+    function processVoiceCommand(text) {
+      setVoiceStatus('Heard: “' + text + '”');
+
+      // Trip commands have priority over shift commands.
+      if (/\b(stop|end|finish)\b.*\btrip\b|\btrip\b.*\b(stop|end|finish)\b/.test(text)) {
+        stopTrip(true);
+        return;
+      }
+
+      if (/\b(start|begin)\b.*\btrip\b|\btrip\b.*\b(start|begin)\b/.test(text)) {
+        startTrip();
+        return;
+      }
+
+      if (/\b(stop|end|finish|go offline)\b.*\bshift\b|\bshift\b.*\b(stop|end|finish)\b/.test(text)) {
+        if (state.isOnline) toggleShift();
+        speakText('Shift stopped');
+        return;
+      }
+
+      if (/\b(start|begin|go online)\b.*\bshift\b|\bshift\b.*\b(start|begin)\b/.test(text)) {
+        if (!state.isOnline) toggleShift();
+        speakText('Shift started');
+        return;
+      }
+
+      // Also accept concise phrases such as "trip on/off".
+      if (/\btrip\s+(on|go)\b/.test(text)) {
+        startTrip();
+        return;
+      }
+      if (/\btrip\s+(off)\b/.test(text)) {
+        stopTrip(true);
+        return;
+      }
+
+      setVoiceStatus('Command not recognised. Try “start trip” or “stop trip”.');
+    }
+
+    function setVoiceStatus(msg) {
+      var el = document.getElementById('voiceStatus');
+      if (el) el.textContent = msg;
+    }
+
+    function showVoiceHelp() {
+      setVoiceStatus('Commands: “start trip”, “stop trip”, “start shift”, “stop shift”, “trip on”, “trip off”.');
+    }
+
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = 'en-IN';
+          u.rate = 1;
+          window.speechSynthesis.speak(u);
+        } catch (e) {}
+      }
+    }
+
+    // ================= SHIFT GOAL & TRIP COUNTER =================
+    state.dailyTarget = 0; // 0 = no target set
+
+    function saveTarget(val) {
+      state.dailyTarget = val;
+    }
+
+    function refreshGoalTracker() {
+      var trips = state.txs.filter(function (t) { return t.type === 'INCOME'; }).length;
+      var avg = trips > 0 ? (state.income / trips) : 0;
+
+      document.getElementById('tripCount').textContent = trips;
+      document.getElementById('avgTrip').textContent = '\u20B9' + avg.toFixed(0);
+
+      var tripPill = document.getElementById('tripPill');
+      tripPill.textContent = trips;
+      tripPill.className = trips > 0 ? 'status-pill status-active' : 'status-pill status-standby';
+
+      var targetVal = document.getElementById('targetVal');
+      var progress = document.getElementById('targetProgress');
+      var label = document.getElementById('targetLabel');
+
+      if (state.dailyTarget > 0) {
+        targetVal.textContent = '\u20B9' + state.dailyTarget.toFixed(0);
+        var pct = Math.min(100, (state.income / state.dailyTarget) * 100);
+        progress.style.width = pct.toFixed(1) + '%';
+        if (state.income >= state.dailyTarget) {
+          label.textContent = '🎉 Target reached! Great shift.';
+          label.style.color = 'var(--green)';
+        } else {
+          label.textContent = '\u20B9' + (state.dailyTarget - state.income).toFixed(0) + ' left to hit your goal (' + pct.toFixed(0) + '%)';
+          label.style.color = 'var(--text-muted)';
+        }
+      } else {
+        targetVal.textContent = 'Not set';
+        progress.style.width = '0%';
+        label.textContent = 'Tap "Set Target" to track progress toward your shift goal';
+        label.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // ================= OFFLINE DRIVER TIPS TICKER =================
+    // Pure JS array, no audio and no network -- can never fail.
+    var driveTips = [
+      '🚗 Peak fares often appear ~15 min before rain starts — watch the sky.',
+      '💧 Stay hydrated. A tired driver misses more surge windows.',
+      '⛽ Refill around 25%, not empty — avoid detours during rush hour.',
+      '🌟 Riders who feel safe & comfortable tip 30% more often on average.',
+      '🛣️ ஓட்டும் போது நல்ல ஓய்வு முக்கியம் — இடையிடையே நிறுத்தி ஓய்வெடுங்கள்.',
+      '📍 Cluster near malls / stations 6–8 PM for consistent short trips.',
+      '🧾 Log every fuel refill here — it makes your real per-km profit visible.',
+      '☕ Short breaks every 2 hours keep reaction time sharp on Chennai roads.'
+    ];
+    var tipIndex = 0;
+    function rotateTip() {
+      var el = document.getElementById('driveTip');
+      if (!el) return;
+      el.style.opacity = 0;
+      setTimeout(function () {
+        tipIndex = (tipIndex + 1) % driveTips.length;
+        el.textContent = driveTips[tipIndex];
+        el.style.opacity = 1;
+      }, 300);
+    }
+    document.getElementById('driveTip').textContent = driveTips[0];
+    setInterval(rotateTip, 6000);
+
+    // ================= FUEL ENGINE =================
+    function addFuel() {
+      var amtInput = document.getElementById('fuelAmtInput');
+      var amt = parseFloat(amtInput.value);
+      var rate = parseFloat(document.getElementById('fuelType').value);
+
+      if (!isNaN(amt) && amt > 0) {
+        var ltr = amt / rate;
+        state.fuelSpent += amt;
+        state.fuelVolume += ltr;
+        state.expenses += amt;
+
+        addTransaction('FUEL', 'Fuel Refill (' + ltr.toFixed(2) + 'L @ \u20B9' + rate + ')', -amt);
+        amtInput.value = '';
+        updateUI();
+      } else {
+        flashNotice('Enter a valid fuel amount first.');
+      }
+    }
+
+    // ================= QUICK COMMAND PARSER =================
+    // Understands: "150 Ola" (income), "Petrol 400" / "Diesel 300" (fuel),
+    // "Tea 20" / "Toll 45" (expense) - amount can be first or last token.
+    function handleCommand() {
+      var input = document.getElementById('cmdInput');
+      var raw = input.value.trim();
+      if (!raw) return;
+
+      var numMatch = raw.match(/-?\d+(\.\d+)?/);
+      if (!numMatch) {
+        flashNotice('No amount found. Try "150 Ola" or "Tea 20".');
+        return;
+      }
+      var amount = Math.abs(parseFloat(numMatch[0]));
+      var lowerRaw = raw.toLowerCase();
+      var tokens = raw.split(/\s+/);
+      var firstIsNum = /^-?\d+(\.\d+)?$/.test(tokens[0]);
+      var lastIsNum = /^-?\d+(\.\d+)?$/.test(tokens[tokens.length - 1]);
+
+      if (lowerRaw.indexOf('petrol') !== -1 || lowerRaw.indexOf('diesel') !== -1 || lowerRaw.indexOf('fuel') !== -1) {
+        var rate = lowerRaw.indexOf('diesel') !== -1 ? CHENNAI_DIESEL : CHENNAI_PETROL;
+        var ltr = amount / rate;
+        state.fuelSpent += amount;
+        state.fuelVolume += ltr;
+        state.expenses += amount;
+        addTransaction('FUEL', 'Fuel Refill (' + ltr.toFixed(2) + 'L @ \u20B9' + rate + ')', -amount);
+      } else if (firstIsNum) {
+        var descIncome = tokens.slice(1).join(' ') || 'Ride Income';
+        state.income += amount;
+        addTransaction('INCOME', descIncome, amount);
+      } else if (lastIsNum) {
+        var descExpense = tokens.slice(0, -1).join(' ') || 'Expense';
+        state.expenses += amount;
+        addTransaction('EXPENSE', descExpense, -amount);
+      } else {
+        var descFallback = raw.replace(numMatch[0], '').trim() || 'Expense';
+        state.expenses += amount;
+        addTransaction('EXPENSE', descFallback, -amount);
+      }
+
+      input.value = '';
+      updateUI();
+    }
+
+    function flashNotice(msg) {
+      var el = document.getElementById('statusNotice');
+      var original = 'Type "150 Ola", "Petrol 400", "Tea 20" & hit Enter:';
+      el.textContent = msg;
+      el.style.color = 'var(--red)';
+      setTimeout(function () {
+        el.textContent = original;
+        el.style.color = 'var(--yellow)';
+      }, 2200);
+    }
+
+    document.getElementById('cmdInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') handleCommand();
+    });
+    document.getElementById('fuelAmtInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') addFuel();
+    });
+    document.getElementById('modalInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') saveModal();
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ================= MODAL (QUICK ADD INCOME/EXPENSE) =================
+    function openModal(field) {
+      modalField = field;
+      var titles = { income: 'Add Income (\u20B9)', expense: 'Add Expense (\u20B9)', target: 'Set Daily Target (\u20B9)' };
+      document.getElementById('modalTitle').textContent = titles[field] || 'Edit Value';
+      var modalInput = document.getElementById('modalInput');
+      modalInput.value = field === 'target' && state.dailyTarget > 0 ? state.dailyTarget : '';
+      document.getElementById('editModal').classList.add('open');
+      setTimeout(function () { modalInput.focus(); }, 50);
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('open');
+      modalField = null;
+    }
+
+    function saveModal() {
+      var val = parseFloat(document.getElementById('modalInput').value);
+      if (isNaN(val) || val <= 0) { closeModal(); return; }
+
+      if (modalField === 'income') {
+        state.income += val;
+        addTransaction('INCOME', 'Manual Income Entry', val);
+      } else if (modalField === 'expense') {
+        state.expenses += val;
+        addTransaction('EXPENSE', 'Manual Expense Entry', -val);
+      } else if (modalField === 'target') {
+        saveTarget(val);
+      }
+      updateUI();
+      closeModal();
+    }
+
+    // ================= TRANSACTION LEDGER =================
+    function addTransaction(type, desc, amt) {
+      state.txs.unshift({ id: 'TXN-' + (state.txCount++), type: type, desc: desc, amt: amt });
+      renderLedger();
+      saveLocalState();
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function renderLedger() {
+      var tbody = document.getElementById('txBody');
+      if (!state.txs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:10px;">No entries logged yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.txs.slice(0, 30).map(function (t) {
+        var bClass = 'badge-income';
+        if (t.type === 'FUEL') bClass = 'badge-fuel';
+        else if (t.type === 'EXPENSE') bClass = 'badge-expense';
+        var color = t.amt >= 0 ? 'var(--green)' : 'var(--red)';
+        var sign = t.amt >= 0 ? '+' : '-';
+        return '<tr>' +
+          '<td><strong>' + escapeHtml(t.id) + '</strong></td>' +
+          '<td><span class="badge ' + bClass + '">' + escapeHtml(t.type) + '</span></td>' +
+          '<td>' + escapeHtml(t.desc) + '</td>' +
+          '<td style="text-align:right; font-weight:bold; color:' + color + ';">' + sign + '\u20B9' + Math.abs(Number(t.amt)||0).toFixed(0) + '</td>' +
+          '<td style="white-space:nowrap;text-align:right;">' +
+          '<button type="button" data-id="' + escapeHtml(t.id) + '" onclick="editTransaction(this.dataset.id)" style="background:#0ea5e9;color:#fff;border:0;border-radius:5px;padding:4px 6px;font-size:.62rem;">Edit</button> ' +
+          '<button type="button" data-id="' + escapeHtml(t.id) + '" onclick="deleteTransaction(this.dataset.id)" style="background:#dc2626;color:#fff;border:0;border-radius:5px;padding:4px 6px;font-size:.62rem;">Delete</button>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function editTransaction(id) {
+      var t = state.txs.find(function(x){ return x.id === id; });
+      if (!t) return;
+
+      var desc = prompt('Edit transaction description:', t.desc);
+      if (desc === null) return;
+
+      var raw = prompt('Edit amount (₹). Enter positive income or positive expense/fuel amount:', Math.abs(Number(t.amt)||0));
+      if (raw === null) return;
+      var amount = Number(String(raw).replace(/,/g,'').trim());
+      if (!Number.isFinite(amount) || amount <= 0) {
+        alert('Please enter a valid positive amount.');
+        return;
+      }
+
+      var oldSigned = Number(t.amt) || 0;
+      var newSigned = t.type === 'INCOME' ? amount : -amount;
+
+      if (t.type === 'INCOME') state.income += (newSigned - oldSigned);
+      else state.expenses += Math.abs(newSigned) - Math.abs(oldSigned);
+      if (t.type === 'FUEL') state.fuelSpent += Math.abs(newSigned) - Math.abs(oldSigned);
+
+      t.desc = desc.trim() || t.desc;
+      t.amt = newSigned;
+      renderLedger();
+      updateUI();
+      flashNotice('✏️ Transaction updated: ' + t.id);
+    }
+
+    function deleteTransaction(id) {
+      var index = state.txs.findIndex(function(x){ return x.id === id; });
+      if (index < 0) return;
+      var t = state.txs[index];
+      if (!confirm('Delete ' + t.id + '? This will also adjust the financial totals.')) return;
+
+      var amount = Math.abs(Number(t.amt)||0);
+      if (t.type === 'INCOME') state.income = Math.max(0, state.income - amount);
+      else state.expenses = Math.max(0, state.expenses - amount);
+      if (t.type === 'FUEL') state.fuelSpent = Math.max(0, state.fuelSpent - amount);
+
+      state.txs.splice(index, 1);
+      renderLedger();
+      updateUI();
+      flashNotice('🗑️ Transaction deleted: ' + t.id);
+    }
+
+    function clearLedger() {
+      if (!state.txs.length) return;
+      if (!confirm('Clear all transaction records? Financial totals will be recalculated from the ledger.')) return;
+
+      state.txs = [];
+      state.income = 0;
+      state.expenses = 0;
+      state.fuelSpent = 0;
+      state.fuelVolume = 0;
+      renderLedger();
+      updateUI();
+      flashNotice('Ledger cleared.');
+    }
+
+    // ================= COPILOT MANAGER =================
+    var COPILOT_WEATHER_URL = 'https://api.open-meteo.com/v1/forecast';
+
+    function copilotSetState(active) {
+      var el = document.getElementById('copilotState');
+      if (!el) return;
+      el.textContent = active ? 'LIVE' : 'STANDBY';
+      el.className = 'status-pill ' + (active ? 'status-active' : 'status-standby');
+    }
+
+    function copilotLocationFromCoords(lat, lon) {
+      // Browser geolocation gives coordinates reliably without needing a geocoding API.
+      // Keep a compact coordinate display so the app remains offline-friendly.
+      return lat.toFixed(5) + ', ' + lon.toFixed(5);
+    }
+
+    function updateCopilotLocation(pos) {
+      if (!pos || !pos.coords) return;
+      var lat = pos.coords.latitude;
+      var lon = pos.coords.longitude;
+      state.copilot.lat = lat;
+      state.copilot.lon = lon;
+      state.copilot.locationText = copilotLocationFromCoords(lat, lon);
+      var el = document.getElementById('copilotLocation');
+      if (el) el.textContent = state.copilot.locationText;
+    }
+
+    async function refreshCopilot(force) {
+      copilotSetState(true);
+
+      if (state.copilot.lat === null || state.copilot.lon === null) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(pos) {
+              updateCopilotLocation(pos);
+              fetchCopilotWeather();
+              updateCopilotAdvice();
+            },
+            function() {
+              setCopilotAdvice('📍 GPS location is unavailable. Allow location permission for live weather.');
+              copilotSetState(false);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+          );
+        } else {
+          setCopilotAdvice('📍 This browser does not provide GPS location.');
+          copilotSetState(false);
+        }
+      } else {
+        fetchCopilotWeather();
+        updateCopilotAdvice();
+      }
+
+      updateCopilotUI();
+      validateLiveInputs(false);
+      if (force) speakText('Copilot updated');
+    }
+
+    async function fetchCopilotWeather() {
+      var lat = state.copilot.lat, lon = state.copilot.lon;
+      if (lat === null || lon === null) return;
+
+      var url = COPILOT_WEATHER_URL +
+        '?latitude=' + encodeURIComponent(lat) +
+        '&longitude=' + encodeURIComponent(lon) +
+        '&current=temperature_2m,weather_code,precipitation,rain,wind_speed_10m' +
+        '&hourly=precipitation_probability' +
+        '&forecast_days=1&timezone=auto';
+
+      try {
+        var response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Weather request failed');
+        var data = await response.json();
+
+        var current = data.current || {};
+        var temp = current.temperature_2m;
+        var rain = current.rain || 0;
+        var precip = current.precipitation || 0;
+        var wind = current.wind_speed_10m;
+        var code = current.weather_code;
+
+        var rainProb = null;
+        if (data.hourly && Array.isArray(data.hourly.precipitation_probability)) {
+          var nowIndex = 0;
+          rainProb = data.hourly.precipitation_probability[nowIndex];
+        }
+
+        state.copilot.temperature = typeof temp === 'number' ? temp : null;
+        state.copilot.rainProbability = typeof rainProb === 'number' ? rainProb : null;
+        state.copilot.weatherUpdatedAt = Date.now();
+
+        var icon = weatherIcon(code);
+        var weatherParts = [];
+        if (temp !== undefined) weatherParts.push(icon + ' ' + Math.round(temp) + '°C');
+        if (typeof rainProb === 'number') weatherParts.push('Rain ' + rainProb + '%');
+        if (rain > 0 || precip > 0) weatherParts.push('Rain now');
+        if (wind !== undefined) weatherParts.push('Wind ' + Math.round(wind) + ' km/h');
+
+        state.copilot.weatherText = weatherParts.join(' • ') || 'Weather available';
+        document.getElementById('copilotWeather').textContent = state.copilot.weatherText;
+        updateCopilotAdvice();
+      } catch (e) {
+        state.copilot.weatherText = 'Offline / unavailable';
+        document.getElementById('copilotWeather').textContent = state.copilot.weatherText;
+        setCopilotAdvice('🌐 Weather could not be refreshed. Your GPS and financial tracking continue locally.');
+      } finally {
+        updateCopilotUI();
+      }
+    }
+
+    function weatherIcon(code) {
+      if (code === 0) return '☀️';
+      if (code === 1 || code === 2) return '🌤️';
+      if (code === 3) return '☁️';
+      if ([45,46].indexOf(code) !== -1) return '🌫️';
+      if ([51,53,55,56,57].indexOf(code) !== -1) return '🌦️';
+      if ([61,63,65,66,67,80,81,82].indexOf(code) !== -1) return '🌧️';
+      if ([71,73,75,77,85,86].indexOf(code) !== -1) return '🌨️';
+      if ([95,96,99].indexOf(code) !== -1) return '⛈️';
+      return '🌡️';
+    }
+
+    function updateCopilotUI() {
+      var hours = state.seconds / 3600;
+      var net = state.income - state.expenses;
+      var hourly = hours > 0 ? net / hours : 0;
+      var rate = state.distance > 0 ? net / state.distance : 0;
+
+      document.getElementById('copilotHourly').textContent = '₹' + Math.max(0, hourly).toFixed(0);
+      document.getElementById('copilotRate').textContent = '₹' + rate.toFixed(2);
+      copilotFuelPrice();
+      updateCopilotAdvice();
+    }
+
+    function setCopilotAdvice(msg) {
+      var el = document.getElementById('copilotAdvice');
+      if (!el) return;
+      el.textContent = msg;
+    }
+
+    function updateCopilotAdvice() {
+      var advice = [];
+
+      if (!state.isOnline) {
+        advice.push('🟡 Shift is offline. Start the shift when you are ready to work.');
+      }
+
+      var net = state.income - state.expenses;
+      var hours = state.seconds / 3600;
+      var hourly = hours > 0 ? net / hours : 0;
+      var rate = state.distance > 0 ? net / state.distance : 0;
+
+      if (state.dailyTarget > 0 && state.income < state.dailyTarget) {
+        var remaining = state.dailyTarget - state.income;
+        var trips = state.txs.filter(function(t) { return t.type === 'INCOME'; }).length;
+        var avg = trips > 0 ? state.income / trips : 0;
+        if (avg > 0) {
+          advice.push('🎯 ₹' + remaining.toFixed(0) + ' remains. At your current average, about ' + Math.ceil(remaining / avg) + ' more trip(s).');
+        } else {
+          advice.push('🎯 ₹' + remaining.toFixed(0) + ' remains to reach your target.');
+        }
+      }
+
+      if (state.distance > 0 && rate > 0) {
+        advice.push('💰 Current net rate is ₹' + rate.toFixed(2) + '/km.');
+      }
+
+      if (hourly > 0) {
+        advice.push('⏱️ Current net pace is ₹' + hourly.toFixed(0) + '/hour.');
+      }
+
+      if (typeof state.copilot.rainProbability === 'number' && state.copilot.rainProbability >= 60) {
+        advice.push('🌧️ Rain probability is ' + state.copilot.rainProbability + '%. Consider planning a safe stop or shelter.');
+      }
+
+      if (state.copilot.weatherText === 'Offline / unavailable') {
+        advice.push('🌐 Weather is temporarily offline; live trip accounting remains available.');
+      }
+
+      if (state.copilot.fuelConfidence === 'LOW') {
+        advice.push('🛡️ Fuel price could not be verified automatically. Copilot is excluding it from current-cost decisions.');
+      } else if (state.copilot.fuelConfidence === 'MEDIUM') {
+        advice.push('🛡️ Fuel price has one current source. Copilot is treating it as indicative until confirmed by another source.');
+      }
+
+      if (!advice.length) {
+        advice.push('🤖 Copilot is monitoring your trip, GPS, earnings and weather.');
+      }
+
+      setCopilotAdvice(advice[0]);
+    }
+
+    function speakCopilotAdvice() {
+      var text = document.getElementById('copilotAdvice');
+      if (text && text.textContent) speakText(text.textContent.replace(/[🎯💰⏱️🌧️🌐🟡🤖]/g, ''));
+    }
+
+
+
+    // ================= AUTOPILOT MANAGER =================
+    var managerInterval = null;
+    var managerBusy = false;
+
+    function updateAutoPilotUI() {
+      var btn = document.getElementById('autoPilotBtn');
+      if (!btn) return;
+      btn.textContent = state.copilot.autoPilot ? '🤖 Auto Manager: ON' : '🤖 Auto Manager: OFF';
+      btn.style.background = state.copilot.autoPilot ? 'var(--accent)' : '#334155';
+      btn.style.color = state.copilot.autoPilot ? '#000' : '#fff';
+    }
+
+    function setManagerActivity(text) {
+      var el = document.getElementById('managerActivity');
+      if (el) el.textContent = '🤖 ' + text;
+    }
+
+    function toggleAutoPilot() {
+      state.copilot.autoPilot = !state.copilot.autoPilot;
+      updateAutoPilotUI();
+      saveLocalState();
+
+      if (state.copilot.autoPilot) {
+        setManagerActivity('Automatic manager is ON — monitoring in the background while this page is open.');
+        runManagerNow();
+      } else {
+        setManagerActivity('Automatic manager is OFF.');
+      }
+    }
+
+    async function runManagerNow() {
+      if (managerBusy) return;
+      managerBusy = true;
+      setManagerActivity('Checking GPS, weather, trip and finances…');
+
+      try {
+        // 1. Get fresh GPS if possible.
+        if (navigator.geolocation) {
+          await new Promise(function(resolve) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+              updateCopilotLocation(pos);
+              resolve();
+            }, function() { resolve(); }, {
+              enableHighAccuracy: true,
+              timeout: 7000,
+              maximumAge: 60000
+            });
+          });
+        }
+
+        // 2. Get fresh weather.
+        if (state.copilot.lat !== null && state.copilot.lon !== null) {
+          await fetchCopilotWeather();
+        }
+
+        // 3. Verify fuel price automatically from multiple current sources.
+        await verifyFuelPriceAutomatically();
+
+        // 4. Refresh all calculated metrics.
+        updateUI();
+        updateCopilotUI();
+
+        // 5. Validate automatically.
+        await validateLiveInputs(false);
+
+        // 6. Make the manager decision.
+        makeManagerDecision();
+
+        state.copilot.lastManagerRun = Date.now();
+        saveLocalState();
+        setManagerActivity('Last automatic check: ' + new Date().toLocaleTimeString());
+      } catch (e) {
+        setManagerActivity('Automatic check completed with limited live data.');
+      } finally {
+        managerBusy = false;
+      }
+    }
+
+    function makeManagerDecision() {
+      var messages = [];
+
+      var net = state.income - state.expenses;
+      var hours = state.seconds / 3600;
+      var hourly = hours > 0 ? net / hours : 0;
+      var rate = state.distance > 0 ? net / state.distance : 0;
+
+      // Safety/operation first.
+      if (navigator.getBattery) {
+        navigator.getBattery().then(function(b) {
+          if (b.level <= 0.20 && !b.charging) {
+            setCopilotAdvice('🔋 Phone battery is below 20%. Connect a charger before continuing a long trip.');
+          }
+        }).catch(function(){});
+      }
+
+      if (state.tripActive && state.copilot.rainProbability !== null &&
+          state.copilot.rainProbability >= 70) {
+        messages.push('🌧️ Heavy rain risk detected. Drive carefully and consider a safe shelter if conditions worsen.');
+      }
+
+      // Target management.
+      if (state.dailyTarget > 0 && state.income < state.dailyTarget) {
+        var remaining = state.dailyTarget - state.income;
+        messages.push('🎯 You are ₹' + remaining.toFixed(0) + ' below today’s target.');
+      }
+
+      // Earnings efficiency.
+      if (hourly > 0 && hourly < 150 && state.seconds >= 3600) {
+        messages.push('📉 Your current net pace is ₹' + hourly.toFixed(0) + '/hour. Consider reassessing the current work area or demand.');
+      }
+
+      if (rate > 0 && rate < 8 && state.distance >= 20) {
+        messages.push('🛣️ Your net return is only ₹' + rate.toFixed(2) + '/km. Check whether long empty runs are reducing profitability.');
+      }
+
+      if (!state.isOnline && state.tripActive) {
+        messages.push('⚠️ Trip is active while the shift is offline. Start the shift or stop the trip.');
+      }
+
+      if (messages.length) {
+        setCopilotAdvice(messages[0]);
+      } else {
+        setCopilotAdvice('🤖 Manager checked your live data. No urgent action is required right now.');
+      }
+    }
+
+    function startAutoPilotLoop() {
+      clearInterval(managerInterval);
+      managerInterval = setInterval(function() {
+        if (state.copilot.autoPilot) runManagerNow();
+      }, 5 * 60 * 1000);
+      updateAutoPilotUI();
+    }
+
+
+    // ================= AUTOMATIC FUEL PRICE VERIFICATION =================
+    var fuelSources = [
+      {
+        name: 'Moneycontrol',
+        url: 'https://www.moneycontrol.com/fuel-price/petrol-price-in-india/',
+        parser: function(text) {
+          var m = text.match(/Chennai\s*\(Rs\.\s*([\d.]+)\/litre/i);
+          return m ? Number(m[1]) : null;
+        }
+      },
+      {
+        name: 'V3Cars',
+        url: 'https://www.v3cars.com/fuel-price-in-india',
+        parser: function(text) {
+          var m = text.match(/Chennai[\s\S]{0,180}?Petrol[\s\S]{0,80}?₹\s*([\d.]+)/i);
+          return m ? Number(m[1]) : null;
+        }
+      },
+      {
+        name: 'ABP',
+        url: 'https://tamil.abplive.com/petrol-prices/chennai-tamil-nadu',
+        parser: function(text) {
+          var m = text.match(/Chennai[\s\S]{0,160}?₹\s*([\d.]+)\s*(?:\/L|per litre)/i);
+          return m ? Number(m[1]) : null;
+        }
+      }
+    ];
+
+    async function fetchTextThroughProxy(url) {
+      // Browser CORS policies may block direct news-site scraping.
+      // Try a public CORS reader only as a best-effort fallback.
+      var attempts = [
+        url,
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+      ];
+
+      for (var i = 0; i < attempts.length; i++) {
+        try {
+          var r = await fetch(attempts[i], {cache:'no-store'});
+          if (r.ok) return await r.text();
+        } catch (e) {}
+      }
+      return '';
+    }
+
+    async function verifyFuelPriceAutomatically() {
+      var results = [];
+
+      // Use multiple independent current sources. We don't blindly trust one source.
+      for (var i = 0; i < fuelSources.length; i++) {
+        try {
+          var text = await fetchTextThroughProxy(fuelSources[i].url);
+          var price = fuelSources[i].parser(text || '');
+          if (validateNumber(price, 50, 200)) {
+            results.push({
+              source: fuelSources[i].name,
+              price: price,
+              url: fuelSources[i].url
+            });
+          }
+        } catch (e) {}
+      }
+
+      state.copilot.fuelSources = results;
+
+      if (!results.length) {
+        state.copilot.fuelPrice = null;
+        state.copilot.fuelSource = 'No live verification';
+        state.copilot.fuelConfidence = 'LOW';
+        state.copilot.fuelSourceDetail = 'Live sources could not be reached from this browser.';
+        copilotFuelPrice();
+        updateFuelSourceDetail();
+        return false;
+      }
+
+      // Group values within ₹0.05 so tiny formatting differences don't create a false conflict.
+      var groups = [];
+      results.forEach(function(r) {
+        var group = groups.find(function(g) { return Math.abs(g.price - r.price) <= 0.05; });
+        if (!group) {
+          group = {price:r.price, sources:[]};
+          groups.push(group);
+        }
+        group.sources.push(r.source);
+      });
+
+      groups.sort(function(a,b) { return b.sources.length - a.sources.length; });
+      var winner = groups[0];
+
+      if (winner.sources.length >= 2) {
+        state.copilot.fuelPrice = winner.price;
+        state.copilot.fuelSource = 'Multi-source verified';
+        state.copilot.fuelConfidence = 'HIGH';
+        state.copilot.fuelSourceDetail =
+          'Verified at ₹' + winner.price.toFixed(2) + '/L by ' + winner.sources.join(' + ');
+      } else {
+        // One-source result is usable as an indication, but not treated as high confidence.
+        state.copilot.fuelPrice = winner.price;
+        state.copilot.fuelSource = winner.sources[0];
+        state.copilot.fuelConfidence = 'MEDIUM';
+        state.copilot.fuelSourceDetail =
+          'Indicative ₹' + winner.price.toFixed(2) + '/L from ' + winner.sources[0] +
+          '. Waiting for a second source before marking HIGH confidence.';
+      }
+
+      copilotFuelPrice();
+      updateFuelSourceDetail();
+      return true;
+    }
+
+    function updateFuelSourceDetail() {
+      var el = document.getElementById('fuelSourceDetail');
+      if (el) el.textContent = '⛽ Fuel source: ' + state.copilot.fuelSourceDetail;
+    }
+
+    // ================= COPILOT VALIDATION & INPUT ENGINE =================
+    function setValidation(status, message, rows) {
+      var stateEl = document.getElementById('validationState');
+      var msgEl = document.getElementById('validationMessage');
+      var rowsEl = document.getElementById('validationRows');
+      stateEl.textContent = status;
+      stateEl.className = 'status-pill ' + (
+        status === 'VALID' ? 'status-active' :
+        status === 'CHECK' ? 'status-warning' :
+        'status-standby'
+      );
+      msgEl.textContent = message;
+      rowsEl.innerHTML = (rows || []).map(function(r) {
+        return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #1e293b;">' +
+          '<span>' + escapeHtml(r.label) + '</span><b>' + escapeHtml(r.value) + '</b></div>';
+      }).join('');
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c];
+      });
+    }
+
+    function validateNumber(value, min, max) {
+      var n = Number(value);
+      return Number.isFinite(n) && n >= min && n <= max;
+    }
+
+    function validateTrackerInputs() {
+      var notes = [];
+      var valid = true;
+
+      if (!validateNumber(state.income, 0, 100000000)) {
+        valid = false; notes.push('Income value is invalid.');
+      }
+      if (!validateNumber(state.expenses, 0, 100000000)) {
+        valid = false; notes.push('Expense value is invalid.');
+      }
+      if (!validateNumber(state.distance, 0, 10000000)) {
+        valid = false; notes.push('Distance value is invalid.');
+      }
+      if (!validateNumber(state.dailyTarget, 0, 100000000)) {
+        valid = false; notes.push('Daily target is invalid.');
+      }
+
+      // Protect against impossible arithmetic states.
+      if (state.income < 0 || state.expenses < 0 || state.distance < 0) {
+        valid = false; notes.push('Negative tracker values are rejected.');
+      }
+
+      return {valid: valid, notes: notes};
+    }
+
+    async function validateLiveInputs(force) {
+      var tracker = validateTrackerInputs();
+      var rows = [];
+
+      rows.push({
+        label: 'GPS',
+        value: state.copilot.lat !== null ? 'Available' : 'Needs permission'
+      });
+
+      rows.push({
+        label: 'Weather',
+        value: state.copilot.weatherText || 'Not available'
+      });
+
+      rows.push({
+        label: 'Fuel price',
+        value: state.copilot.fuelPrice !== null
+          ? '₹' + Number(state.copilot.fuelPrice).toFixed(2) + '/L (' + state.copilot.fuelSource + ')'
+          : 'Not verified'
+      });
+
+      rows.push({
+        label: 'Trip distance',
+        value: state.distance.toFixed(2) + ' km'
+      });
+
+      if (!tracker.valid) {
+        state.copilot.validationNotes = tracker.notes;
+        setValidation('CHECK', 'Copilot rejected one or more tracker values. Review them before relying on the recommendation.', rows);
+        return false;
+      }
+
+      // Weather is accepted only if it was fetched successfully and recently.
+      var weatherFresh = state.copilot.weatherUpdatedAt &&
+        (Date.now() - state.copilot.weatherUpdatedAt < 30 * 60 * 1000) &&
+        state.copilot.weatherText !== 'Offline / unavailable';
+
+      if (!weatherFresh && state.copilot.lat !== null) {
+        await fetchCopilotWeather();
+        weatherFresh = state.copilot.weatherUpdatedAt &&
+          (Date.now() - state.copilot.weatherUpdatedAt < 30 * 60 * 1000);
+      }
+
+      // Never label the hard-coded fuel fallback as live/validated.
+      if (state.copilot.fuelSource === 'Fallback') {
+        state.copilot.fuelConfidence = 'LOW';
+      }
+
+      var notes = [];
+      if (!weatherFresh) notes.push('Weather could not be freshly verified.');
+      if (state.copilot.fuelConfidence === 'LOW') {
+        notes.push('Fuel price could not be verified automatically; Copilot will not use a fallback as a current market quote.');
+      } else if (state.copilot.fuelConfidence === 'MEDIUM') {
+        notes.push('Fuel price has one live source only; Copilot will treat it as indicative until another source confirms it.');
+      }
+
+      state.copilot.validationNotes = notes;
+      state.copilot.validatedAt = Date.now();
+
+      rows = [
+        {label:'GPS', value: state.copilot.lat !== null ? 'Verified from device' : 'Unavailable'},
+        {label:'Weather', value: weatherFresh ? 'Freshly verified' : 'Not verified'},
+        {label:'Fuel price', value: state.copilot.fuelSource + ' • ' + state.copilot.fuelConfidence},
+        {label:'Financial data', value: 'Passed sanity checks'}
+      ];
+
+      if (notes.length) {
+        setValidation('CHECK', notes.join(' '), rows);
+      } else {
+        setValidation('VALID', 'Copilot validated the available inputs before using them.', rows);
+      }
+
+      updateCopilotAdvice();
+      return notes.length === 0;
+    }
+
+    function openInputReview() {
+      var fuel = prompt('Optional manual override: enter a verified fuel price (₹/L), or press Cancel to leave automatic management unchanged.');
+      if (fuel === null) return;
+
+      if (fuel.trim() === '') return;
+
+      if (validateNumber(fuel, 50, 300)) {
+        state.copilot.fuelPrice = Number(fuel);
+        state.copilot.fuelSource = 'User override';
+        state.copilot.fuelConfidence = 'MEDIUM';
+        document.getElementById('copilotFuel').textContent = '₹' + Number(fuel).toFixed(2) + '/L';
+      } else {
+        alert('Fuel price rejected. Enter a realistic ₹/L value.');
+        return;
+      }
+
+      saveLocalState();
+      validateLiveInputs(true);
+    }
+
+    function copilotFuelPrice() {
+      var price = state.copilot.fuelPrice !== null
+        ? state.copilot.fuelPrice
+        : CHENNAI_PETROL;
+
+      var el = document.getElementById('copilotFuel');
+      if (el) el.textContent = '₹' + price.toFixed(2) + '/L';
+
+      state.copilot.fuelUpdatedAt = Date.now();
+      return price;
+    }
+
+    // ================= LOCAL STORAGE / EDGE PWA FRIENDLY =================
+    var STORAGE_KEY = 'gigride-pro-edge-v3';
+
+    function saveLocalState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          baseOdo: state.baseOdo,
+          income: state.income,
+          expenses: state.expenses,
+          fuelSpent: state.fuelSpent,
+          fuelVolume: state.fuelVolume,
+          txCount: state.txCount,
+          txs: state.txs,
+          dailyTarget: state.dailyTarget,
+          copilot: {
+            lat: state.copilot.lat,
+            lon: state.copilot.lon,
+            locationText: state.copilot.locationText,
+            fuelPrice: state.copilot.fuelPrice,
+            fuelSource: state.copilot.fuelSource,
+            fuelConfidence: state.copilot.fuelConfidence,
+            fuelSourceDetail: state.copilot.fuelSourceDetail,
+            autoPilot: state.copilot.autoPilot
+          }
+        }));
+      } catch (e) {}
+    }
+
+    function loadLocalState() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (!saved) return;
+        ['baseOdo','income','expenses','fuelSpent','fuelVolume','txCount','txs','dailyTarget'].forEach(function (key) {
+          if (saved[key] !== undefined) state[key] = saved[key];
+        });
+        if (saved.copilot) {
+          state.copilot.lat = saved.copilot.lat ?? null;
+          state.copilot.lon = saved.copilot.lon ?? null;
+          state.copilot.locationText = saved.copilot.locationText || 'Waiting for GPS';
+          state.copilot.fuelPrice = saved.copilot.fuelPrice ?? null;
+          state.copilot.fuelSource = saved.copilot.fuelSource || 'Fallback';
+          state.copilot.fuelConfidence = saved.copilot.fuelConfidence || 'LOW';
+          state.copilot.fuelSourceDetail = saved.copilot.fuelSourceDetail || 'Automatic verification pending';
+          state.copilot.autoPilot = saved.copilot.autoPilot !== false;
+        }
+      } catch (e) {}
+    }
+
+    // ================= MASTER UI REFRESH =================
+    function updateUI() {
+      document.getElementById('shiftDist').textContent = state.distance.toFixed(2) + ' km';
+      document.getElementById('liveOdo').textContent = (state.baseOdo + state.distance).toFixed(2) + ' km';
+
+      document.getElementById('incomeVal').textContent = '\u20B9' + state.income.toFixed(0);
+      document.getElementById('expenseVal').textContent = '\u20B9' + state.expenses.toFixed(0);
+
+      var netProfit = state.income - state.expenses;
+      document.getElementById('netProfit').textContent = '\u20B9' + netProfit.toFixed(0);
+
+      var netRate = state.distance > 0 ? (netProfit / state.distance) : 0;
+      document.getElementById('netRate').textContent = '\u20B9' + netRate.toFixed(2) + '/km';
+
+      document.getElementById('fuelSpent').textContent = '\u20B9' + state.fuelSpent.toFixed(0);
+      document.getElementById('fuelVolume').textContent = state.fuelVolume.toFixed(2) + ' L';
+
+      var mileage = state.fuelVolume > 0 ? (state.distance / state.fuelVolume) : 0;
+      document.getElementById('mileageDisplay').textContent = mileage.toFixed(1) + ' km/L';
+
+      refreshGoalTracker();
+      updateTripUI();
+      saveLocalState();
+    }
+
+    // Initial paint
+    loadLocalState();
+    updateUI();
+    renderLedger();
+    updateTripUI();
+    initVoice();
+    copilotSetState(false);
+    copilotFuelPrice();
+    updateCopilotUI();
+    // Refresh weather periodically while the page remains open.
+    setInterval(function() {
+      if (state.isOnline || state.copilot.lat !== null) refreshCopilot(false);
+    }, 15 * 60 * 1000);
+
+  </script>
+
+<script>
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js', {scope:'./'})
+      .then(function(reg){
+        console.log('GigRide HTTPS service worker ready', reg.scope);
+      })
+      .catch(function(err){
+        console.warn('Service worker registration failed', err);
+      });
+  });
+}
+</script>
+
+</body>
+</html>
