@@ -1,0 +1,34 @@
+GigRide V8.1 — HTTPS / Microsoft Edge build
+
+THIS IS THE IMPORTANT VERSION FOR GPS + MICROPHONE.
+
+Deployment target:
+GitHub Pages, which provides an HTTPS URL.
+
+Files:
+- index.html — GigRide V8.1
+- manifest.webmanifest — installable PWA metadata
+- sw.js — offline cache/update service worker
+- icon.svg — PWA icon
+- .github/workflows/deploy.yml — automatic GitHub Pages deployment
+- .nojekyll
+
+PHONE-ONLY DEPLOYMENT:
+1. Create/open a GitHub repository.
+2. Upload the CONTENTS of this folder to the repository root (main branch).
+3. GitHub Actions runs "Deploy GigRide to GitHub Pages".
+4. Open repository Settings -> Pages and make sure the source is GitHub Actions if GitHub asks.
+5. Wait for the workflow to finish.
+6. Open the HTTPS Pages URL in Microsoft Edge.
+7. Tap Test GPS and allow location.
+8. Tap Test Mic and allow microphone.
+9. Then use GigRide's normal voice/trip controls.
+
+IMPORTANT:
+- Do NOT use the content:// local-file address for the driving version.
+- Use the generated https://<username>.github.io/<repository>/ address.
+- GPS and microphone still require the user to grant browser permission.
+- The service worker/PWA features require HTTPS in production.
+
+This package is for GigRide V8.1. FinanceManager should remain a separate HTTPS app and
+later connect through a secure shared backend/API for true multi-user synchronization.
