@@ -26,6 +26,31 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("file:///android_asset/www/index.html");
         setContentView(webView);
+        handleCfoResult(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleCfoResult(intent);
+    }
+
+    private void handleCfoResult(Intent intent) {
+        if (intent == null || intent.getData() == null) return;
+        Uri uri = intent.getData();
+        if (!"gigride".equals(uri.getScheme()) || !"cfo-result".equals(uri.getAuthority())) return;
+        final String transactionId = uri.getQueryParameter("transactionId");
+        final String status = uri.getQueryParameter("status");
+        if (transactionId == null || transactionId.length() == 0 || transactionId.length() > 256) return;
+        if (!("accepted".equals(status) || "rejected".equals(status) || "needs_review".equals(status))) return;
+        if (webView == null) return;
+        final String js = "window.handleCfoResult&&window.handleCfoResult(" + quoteJs(transactionId) + "," + quoteJs(status) + ")";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private static String quoteJs(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\"";
     }
 
     public final class CfoBridge {
