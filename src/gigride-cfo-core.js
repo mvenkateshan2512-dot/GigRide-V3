@@ -20,9 +20,7 @@
     try { return JSON.parse(global.localStorage.getItem(key) || '[]'); } catch (_) { return []; }
   }
 
-  function writeJson(key, value) {
-    global.localStorage.setItem(key, JSON.stringify(value));
-  }
+  function writeJson(key, value) { global.localStorage.setItem(key, JSON.stringify(value)); }
 
   function parseAmount(text) {
     const match = String(text).match(/(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d{1,2})?)/i);
@@ -46,57 +44,45 @@
 
     const amountMinor = parseAmount(text);
     const alias = Object.keys(CATEGORY_ALIASES).find(k => new RegExp('\\b' + k + '\\b', 'i').test(text));
-    if (!amountMinor || !alias) {
-      return { intent: 'transaction', requiresConfirmation: true, reason: !amountMinor ? 'missing_amount' : 'missing_category', raw };
-    }
+    if (!amountMinor || !alias) return { intent: 'transaction', requiresConfirmation: true, reason: !amountMinor ? 'missing_amount' : 'missing_category', raw };
     const category = CATEGORY_ALIASES[alias];
     const explicitExpense = /expense|spent|paid|cost/.test(text);
     const explicitIncome = /income|earned|earning|received/.test(text);
     const type = category === 'trip_income' || category === 'incentive' || category === 'tip' ? 'income' : 'expense';
-    if ((explicitExpense && type === 'income') || (explicitIncome && type === 'expense')) {
-      return { intent: 'transaction', requiresConfirmation: true, reason: 'type_conflict', raw };
-    }
+    if ((explicitExpense && type === 'income') || (explicitIncome && type === 'expense')) return { intent: 'transaction', requiresConfirmation: true, reason: 'type_conflict', raw };
     return { intent: 'transaction', requiresConfirmation: false, type, category, amountMinor, platform: ['ola','uber','rapido'].includes(alias) ? alias : null, raw };
   }
 
   function createTransaction(parsed, options) {
     if (!parsed || parsed.intent !== 'transaction' || parsed.requiresConfirmation) throw new Error('Transaction is not safe to commit');
-    const now = new Date().toISOString();
     return {
-      transactionId: uuid(), schemaVersion: 1, capturedAt: now, sourceApp: 'gigride',
-      captureMethod: (options && options.captureMethod) || 'voice', type: parsed.type,
-      category: parsed.category, amountMinor: parsed.amountMinor, currency: 'INR',
-      platform: parsed.platform || null, note: (options && options.note) || null,
-      shiftId: (options && options.shiftId) || null, syncStatus: 'pending', revision: 1
+      transactionId: uuid(), schemaVersion: 1, capturedAt: new Date().toISOString(), sourceApp: 'gigride',
+      captureMethod: (options && options.captureMethod) || 'voice', type: parsed.type, category: parsed.category,
+      amountMinor: parsed.amountMinor, currency: 'INR', platform: parsed.platform || null,
+      note: (options && options.note) || null, shiftId: (options && options.shiftId) || null,
+      syncStatus: 'pending', revision: 1
     };
   }
 
   function commitTransaction(tx) {
     const transactions = readJson(STORAGE_KEY);
     if (transactions.some(item => item.transactionId === tx.transactionId)) return { saved: false, duplicate: true, transaction: tx };
-    transactions.push(tx);
-    writeJson(STORAGE_KEY, transactions);
-    const queue = readJson(QUEUE_KEY);
-    if (!queue.includes(tx.transactionId)) queue.push(tx.transactionId);
-    writeJson(QUEUE_KEY, queue);
+    transactions.push(tx); writeJson(STORAGE_KEY, transactions);
+    const queue = readJson(QUEUE_KEY); if (!queue.includes(tx.transactionId)) queue.push(tx.transactionId); writeJson(QUEUE_KEY, queue);
     return { saved: true, duplicate: false, transaction: tx };
   }
 
   function getPendingSync() {
     const ids = new Set(readJson(QUEUE_KEY));
-    return readJson(STORAGE_KEY).filter(tx => ids.has(tx.transactionId) && tx.syncStatus === 'pending');
+    return readJson(STORAGE_KEY).filter(tx => ids.has(tx.transactionId) && !['accepted','rejected'].includes(tx.syncStatus));
   }
 
   function acknowledge(transactionId, status) {
-    if (!['sent','accepted','rejected','needs_review'].includes(status)) throw new Error('Invalid sync status');
-    const transactions = readJson(STORAGE_KEY);
-    const tx = transactions.find(item => item.transactionId === transactionId);
-    if (!tx) return false;
-    tx.syncStatus = status;
-    writeJson(STORAGE_KEY, transactions);
-    if (status === 'accepted' || status === 'rejected') {
-      writeJson(QUEUE_KEY, readJson(QUEUE_KEY).filter(id => id !== transactionId));
-    }
+    if (!['pending','sent','accepted','rejected','needs_review'].includes(status)) throw new Error('Invalid sync status');
+    const transactions = readJson(STORAGE_KEY); const tx = transactions.find(item => item.transactionId === transactionId); if (!tx) return false;
+    tx.syncStatus = status; writeJson(STORAGE_KEY, transactions);
+    if (status === 'accepted' || status === 'rejected') writeJson(QUEUE_KEY, readJson(QUEUE_KEY).filter(id => id !== transactionId));
+    else { const queue = readJson(QUEUE_KEY); if (!queue.includes(transactionId)) { queue.push(transactionId); writeJson(QUEUE_KEY, queue); } }
     return true;
   }
 
